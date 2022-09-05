@@ -34,6 +34,7 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = [
     # 'corsheaders',
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,6 +44,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+
+    # custome apps
+    'auth_panda',
 ]
 
 MIDDLEWARE = [
@@ -114,6 +118,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
+AUTH_USER_MODEL = 'auth_panda.AuthEmployeeRegisterModel'
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/

@@ -1,3 +1,4 @@
 **/node_modules/**
 **/site_packages/**
 **/secrets.**
+**alembic.ini**
