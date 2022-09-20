@@ -9,17 +9,27 @@ from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
+# jose was using only JWT. Hence not using it.
+# from jose import JWTError, jwt
 
+# fastapi_jwt_auth is used instead to use both refresh and access token.
+from fastapi_jwt_auth import AuthJWT
 
 
 # Custom imports
 
 from database import Base
+from exceptions import LoginException
 from ..schema.auth_schema import User
-from config import settings
+from config import settings, Settings
 
 # Custom config
+
+@AuthJWT.load_config
+def get_config():
+    return Settings()
+
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -80,47 +90,48 @@ class Users(Base):
         return db.query(Users).filter(Users.username == username)
 
 
-    async def get_current_user(db : Session, token: str = Depends(oauth2_scheme)):
-        credentials_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-        try:
-            payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-            username: str = payload.get("sub")
-            if username is None:
-                raise credentials_exception
-            # token_data = TokenData(username=username)
-        except JWTError:
-            raise credentials_exception
-        user = Users.get_user(db, username=username)
-        if user is None:
-            raise credentials_exception
-        return username
+    # async def get_current_user(db : Session, token: str = Depends(oauth2_scheme)):
+    #     credentials_exception = HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED,
+    #         detail="Could not validate credentials",
+    #         headers={"WWW-Authenticate": "Bearer"},
+    #     )
+    #     try:
+    #         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+    #         username: str = payload.get("sub")
+    #         if username is None:
+    #             raise credentials_exception
+    #         # token_data = TokenData(username=username)
+    #     except JWTError:
+    #         raise credentials_exception
+    #     user = Users.get_user(db, username=username)
+    #     if user is None:
+    #         raise credentials_exception
+    #     return username
 
     
-    async def get_current_active_user(current_user: User = Depends(get_current_user)):
-        if current_user.is_active:
-            raise HTTPException(status_code=400, detail="Inactive user")
-        return current_user
+    # async def get_current_active_user(current_user: User = Depends(get_current_user)):
+    #     if current_user.is_active:
+    #         raise HTTPException(status_code=400, detail="Inactive user")
+    #     return current_user
 
 
     def authenticate_user(db: Session, username: str, password: str):
         user = Users.get_user(db, username)
         if not user:
-            return False
+            raise LoginException("Invalid username", field="username")
         if not Users.verify_password(password, user.password):
-            return False
+            raise LoginException("Invalid password", field="password")
         return user
 
 
-    def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
-        to_encode = data.copy()
-        if expires_delta:
-            expire = datetime.utcnow() + expires_delta
-        else:
-            expire = datetime.utcnow() + timedelta(minutes=15)
-        to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-        return encoded_jwt
+    # def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
+    #     to_encode = data.copy()
+    #     if expires_delta:
+    #         expire = datetime.utcnow() + expires_delta
+    #     else:
+    #         expire = datetime.utcnow() + timedelta(minutes=15)
+    #     to_encode.update({"exp": expire})
+    #     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    #     return encoded_jwt
+

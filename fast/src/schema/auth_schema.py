@@ -13,8 +13,8 @@ class User(BaseModel):
     is_active: bool
     is_admin: bool
     is_superuser: bool
-    created_at: str
-    last_logged_in: str
+    # created_at: str
+    # last_logged_in: str
 
 
 class LoginUser(BaseModel):
