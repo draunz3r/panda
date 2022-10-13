@@ -12,7 +12,7 @@ class User(BaseModel):
     cell_no: str
     is_active: bool
     is_admin: bool
-    is_superuser: bool
+    is_caterer: bool
     # created_at: str
     # last_logged_in: str
 
