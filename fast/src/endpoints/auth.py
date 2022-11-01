@@ -1,23 +1,18 @@
 # Built-in
+from src.models.auth.auth_model import Users
+from config import settings
+from ..schema.auth_schema import User, LoginUser
+from exceptions import LoginException
+from database import get_session
+from sqlalchemy.orm import Session
+from fastapi_jwt_auth import AuthJWT, exceptions
+from fastapi import APIRouter, Depends, HTTPException, status
 import sys
 from datetime import datetime, timedelta
 from pprint import pprint
 from uuid import uuid4
 
-sys.path.insert(0,'/home/admin/panda/fast/src')
-
-
-# Framework
-from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi_jwt_auth import AuthJWT, exceptions
-from sqlalchemy.orm import Session
-
-# Custom
-from database import get_session
-from exceptions import LoginException
-from ..schema.auth_schema import User, LoginUser
-from models.auth.auth_model import Users 
-from config import settings
+sys.path.insert(0, '/home/admin/panda/fast/src')
 
 
 router = APIRouter(prefix="/auth",
@@ -34,7 +29,7 @@ async def index():
 async def create_user(data: User):
     try:
         user = Users.create_user(data=data)
-        return {"op":"success", "msg": "user created", "username": user.username}
+        return {"op": "success", "msg": "user created", "username": user.username}
     except Exception as e:
         return {"op": "error", "msg": "user creation failed"}
 
@@ -59,15 +54,19 @@ async def create_user(data: User):
 async def login(data: LoginUser, Authorize: AuthJWT = Depends()):
     try:
         user = Users.authenticate_user(data.username, data.password)
-        access_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_expires = timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         refresh_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-        access_token = Authorize.create_access_token(subject=user.username, expires_time=access_expires)
-        refresh_token = Authorize.create_refresh_token(subject=user.username, expires_time=refresh_expires)
+        access_token = Authorize.create_access_token(
+            subject=user.username, expires_time=access_expires)
+        refresh_token = Authorize.create_refresh_token(
+            subject=user.username, expires_time=refresh_expires)
         return {"access_token": access_token, "refresh_token": refresh_token, "username": user.username,
-         "is_caterer": user.is_caterer, "admin": user.is_admin, "op":"success"}
+                "is_caterer": user.is_caterer, "admin": user.is_admin, "op": "success"}
 
     except LoginException as le:
-        return {"detail" : le, "op": "failed"}
+        # print(data, le)
+        return {"detail": le, "op": "failed"}
 
 
 @router.post('/token/refresh')

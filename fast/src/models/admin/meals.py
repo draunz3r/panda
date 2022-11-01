@@ -12,14 +12,14 @@ from database import get_session
 class MealCategories(SQLModel, table=True):
     id: str = Field(primary_key=True)
     meal_category: str
-    meal_items: List["MenuItems"] = Relationship(
-        back_populates="meal_category")
+    meal_items: List["MenuItems"] = Relationship(sa_relationship_kwargs={"cascade": "delete"},
+                                                 back_populates="meal_category")
 
     def save(self):
         with get_session() as db:
             db.add(self)
             db.commit()
-            db.refresh()
+            db.refresh(self)
 
     @staticmethod
     def fetch_all_categories():
@@ -35,7 +35,7 @@ class MenuItems(SQLModel, table=True):
     rating: float = Field(default=None, nullable=True)
 
     meal_category_id: Optional[str] = Field(
-        default=None, foreign_key="mealcategories.id")
+        default=None, foreign_key="mealcategories.id",)
     meal_category: Optional["MealCategories"] = Relationship(
         back_populates="meal_items")
 
@@ -54,3 +54,8 @@ class MenuItems(SQLModel, table=True):
     def fetch_items_by_key(key: str):
         with get_session() as db:
             return db.exec(select(MenuItems).where(col(MenuItems.item_name).ilike("%"+key+"%"))).fetchall()
+
+    @staticmethod
+    def fetch_item_by_key(key: str):
+        with get_session() as db:
+            return db.exec(select(MenuItems).where(col(MenuItems.item_name).ilike("%"+key+"%"))).one()

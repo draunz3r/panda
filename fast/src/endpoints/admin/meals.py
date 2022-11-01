@@ -12,9 +12,9 @@ from sqlalchemy.orm import Session
 # from ..schema.auth_schema import User, LoginUser
 # from ..models.auth_models import Users
 # from config import settings
-from models.auth.auth_model import Users
+from src.models.auth.auth_model import Users
 from models.admin.meals import MealCategories, MenuItems
-from src.schema.admin.meals_schema import MenuQuery, MenuItemSchema
+from src.schema.admin.meals_schema import MenuQuery, MenuItemSchema, MealCategorySchema
 
 
 router = APIRouter(prefix="/admin/meals",
@@ -59,3 +59,31 @@ async def create_menu_item(data: MenuItemSchema, Authorize: AuthJWT = Depends())
     except Exception as exp:
         print("> Error occurred:{0}".format(exp))
         return {"op": "failed", "msg": "Unhandled Error Occurred", "item": data.item_name}
+
+
+@router.post("/create-meal-category")
+async def create_menu_category(data: MealCategorySchema, Authorize: AuthJWT = Depends()):
+    try:
+        Authorize.jwt_required()
+        current_user = Authorize.get_jwt_subject()
+        user = Users.get_user_by_username(current_user)
+        if user.is_admin or user.is_caterer:
+            list_of_menu = []
+            if len(data.menuItems) == 0:
+                pass
+            else:
+                for item in data.menuItems:
+                    mi = MenuItems.fetch_item_by_key(item)
+                    list_of_menu.append(mi)
+
+            mc = MealCategories(
+                id=str(uuid4()), meal_category=data.category, meal_items=list_of_menu)
+            mc.save()
+
+            return {"op": "success", "msg": "Successfully created menu items", "category": mc.meal_category}
+        else:
+            return {"op": "failed", "msg": "Operation not allowed. Not enough privilege."}
+
+    except Exception as exp:
+        print("> Error occurred:{0}".format(exp))
+        return {"op": "failed", "msg": "Unhandled Error Occurred", "category": data.category}
